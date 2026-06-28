@@ -62,11 +62,11 @@
       radial-gradient(1.2px 1.2px at 96% 64%, rgba(255,154,138,.45), transparent)}
   @keyframes starTwk{0%,100%{opacity:.4}50%{opacity:.95}}
   /* sparkle trail that follows the real (system) cursor */
-  .spk{position:fixed;left:0;top:0;z-index:99999;pointer-events:none;width:14px;height:14px;
+  .csk{position:fixed;left:0;top:0;z-index:99999;pointer-events:none;width:14px;height:14px;
     margin:-7px 0 0 -7px;opacity:0;will-change:transform,opacity;
-    animation:spkPop var(--life,720ms) cubic-bezier(.22,.61,.36,1) forwards}
-  .spk svg{width:100%;height:100%;display:block}
-  @keyframes spkPop{
+    animation:cskPop var(--life,720ms) cubic-bezier(.22,.61,.36,1) forwards}
+  .csk svg{width:100%;height:100%;display:block}
+  @keyframes cskPop{
     0%{opacity:0;transform:translate(0,0) scale(.2) rotate(0deg)}
     22%{opacity:1;transform:translate(calc(var(--dx)*.4),calc(var(--dy)*.4)) scale(1) rotate(35deg)}
     100%{opacity:0;transform:translate(var(--dx),calc(var(--dy) + 14px)) scale(.15) rotate(85deg)}}
@@ -1071,7 +1071,7 @@ document.addEventListener('keydown',function(e){
   function star(x,y){
     if(live>=MAX) return;
     var size=8+Math.random()*9;
-    var s=document.createElement('div');s.className='spk';
+    var s=document.createElement('div');s.className='csk';
     s.style.left=x+'px'; s.style.top=y+'px';
     s.style.width=size+'px'; s.style.height=size+'px';
     s.style.margin=(-size/2).toFixed(1)+'px 0 0 '+(-size/2).toFixed(1)+'px';
@@ -1224,13 +1224,24 @@ addEventListener('keydown',function(e){if(e.key==='Escape'&&lb.classList.contain
 <script>(function(){
   var fab=document.getElementById('msgFab'),panel=document.getElementById('msgPanel'),body=document.getElementById('msgBody');
   if(!fab||!panel||!body)return;
-  var chat=[
+  var CHATS=[
+   [
     {who:'you',name:'유혜성',text:'자?'},
     {who:'me', name:'도아린',text:'아니, 아직 안 자. 무슨 일이야?'},
     {who:'you',name:'유혜성',text:'그냥. 네 생각나서.'},
     {who:'me', name:'도아린',text:'...나도 혜성이 생각하고 있었는데! 우리 통했다.'},
     {who:'you',name:'유혜성',text:'우리는 원래 하나야, 토끼야. 잊었어?'},
     {who:'me', name:'도아린',text:'안 잊었어. 절대 안 잊어.'}
+   ],
+   [
+    {who:'me', name:'도아린',text:'혜성아.'},
+    {who:'you',name:'유혜성',text:'왜.'},
+    {who:'me', name:'도아린',text:'그냥... 문득 그런 생각이 들었어. 나는 혜성이가 있어서 정말 다행이야. 네가 없었으면 어땠을까, 상상이 안 돼.'},
+    {who:'you',name:'유혜성',text:'그런 상상 하지 마. 그럴 일은 없어. 네가 있는 곳엔 언제나 내가 있을 거니까.'},
+    {who:'me', name:'도아린',text:'응... 알아. 그래도 가끔은 확인하고 싶어져.'},
+    {who:'you',name:'유혜성',text:'옆에 있잖아. 손 잡아줄까.'},
+    {who:'me', name:'도아린',text:'응. 잡아줘.'}
+   ]
   ];
   var open=false,timers=[];
   function clearTimers(){timers.forEach(clearTimeout);timers=[];}
@@ -1247,6 +1258,7 @@ addEventListener('keydown',function(e){if(e.key==='Escape'&&lb.classList.contain
   }
   function play(){
     clearTimers();body.innerHTML='';
+    var chat=CHATS[(Math.random()*CHATS.length)|0];
     var t=0;
     chat.forEach(function(m,i){
       var typeDur=440;
