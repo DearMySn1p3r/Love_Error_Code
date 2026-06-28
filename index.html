@@ -4,6 +4,8 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Love Error Code</title>
+<link rel="icon" type="image/png" href="다운로드.png">
+<link rel="apple-touch-icon" href="다운로드.png">
 <meta name="description" content="Love Error Code · 유혜성 & 도아린. 차가운 별과 그를 품은 우주의 기록." />
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -59,16 +61,15 @@
       radial-gradient(1.2px 1.2px at 60% 70%, rgba(150,120,255,.45), transparent),
       radial-gradient(1.2px 1.2px at 96% 64%, rgba(255,154,138,.45), transparent)}
   @keyframes starTwk{0%,100%{opacity:.4}50%{opacity:.95}}
-  /* custom star cursor */
-  .starcursor{position:fixed;left:0;top:0;z-index:99999;pointer-events:none;width:24px;height:24px;
-    opacity:0;transition:opacity .25s;will-change:transform}
-  .starcursor svg{width:100%;height:100%;display:block}
-  .starcursor.on{opacity:1}
-  .starcursor.hot{width:37px;height:37px}
-  .starcursor.click{width:17px;height:17px}
-  @keyframes curTwk{0%,100%{transform:scale(1) rotate(0deg)}50%{transform:scale(.82) rotate(16deg)}}
-  html.finecursor,html.finecursor body{cursor:none}
-  html.finecursor a,html.finecursor button,html.finecursor input,html.finecursor .bk-track i,html.finecursor .topnav a,html.finecursor .gx-arrow,html.finecursor .gx-dots i,html.finecursor .gx-slide img{cursor:none}
+  /* sparkle trail that follows the real (system) cursor */
+  .spk{position:fixed;left:0;top:0;z-index:99999;pointer-events:none;width:14px;height:14px;
+    margin:-7px 0 0 -7px;opacity:0;will-change:transform,opacity;
+    animation:spkPop var(--life,720ms) cubic-bezier(.22,.61,.36,1) forwards}
+  .spk svg{width:100%;height:100%;display:block}
+  @keyframes spkPop{
+    0%{opacity:0;transform:translate(0,0) scale(.2) rotate(0deg)}
+    22%{opacity:1;transform:translate(calc(var(--dx)*.4),calc(var(--dy)*.4)) scale(1) rotate(35deg)}
+    100%{opacity:0;transform:translate(var(--dx),calc(var(--dy) + 14px)) scale(.15) rotate(85deg)}}
   .neb{position:absolute;border-radius:50%;filter:blur(74px);opacity:.4;animation:drift 36s ease-in-out infinite;will-change:transform}
   .neb.a{width:560px;height:560px;left:-120px;top:6%;background:radial-gradient(closest-side,#FFD7CE,transparent)}
   .neb.b{width:620px;height:620px;right:-160px;top:34%;animation-duration:44s;animation-delay:-8s;background:radial-gradient(closest-side,#FFD2E2,transparent)}
@@ -101,7 +102,7 @@
   /* ===== HUD ===== */
   .hud{position:fixed;z-index:5;font-family:var(--mono);font-size:8.5px;letter-spacing:.18em;color:var(--muted);pointer-events:none}
   .hud.tl{top:62px;left:22px}.hud.tr{top:62px;right:22px;text-align:right}
-  .hud.bl{bottom:14px;left:22px}.hud.br{bottom:14px;right:22px;text-align:right}
+  .hud.bl{bottom:14px;left:22px}.hud.br{bottom:14px;right:24px;text-align:right}
   .hud b{color:var(--momo-ink)}
   @media(max-width:680px){.hud{display:none}}
 
@@ -1061,26 +1062,38 @@ document.addEventListener('keydown',function(e){
   window.__bgm=a;
 })();
 
-/* ===== custom star cursor (direct, low-latency) ===== */
+/* ===== sparkle trail following the real system cursor ===== */
 (function(){
   if(!window.matchMedia || !matchMedia('(hover:hover) and (pointer:fine)').matches) return;
-  document.documentElement.classList.add('finecursor');
-  var c=document.createElement('div');c.className='starcursor';
-  c.innerHTML='<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="scg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFB199"/><stop offset="1" stop-color="#F87FB0"/></linearGradient><radialGradient id="scgG" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#FFA6C9" stop-opacity=".5"/><stop offset="1" stop-color="#FFA6C9" stop-opacity="0"/></radialGradient></defs><circle cx="50" cy="50" r="48" fill="url(#scgG)"/><path d="M50 4C54.5 35 65 45.5 96 50C65 54.5 54.5 65 50 96C45.5 65 35 54.5 4 50C35 45.5 45.5 35 50 4Z" fill="url(#scg)"/><path d="M50 26C51.6 42 58 48.4 74 50C58 51.6 51.6 58 50 74C48.4 58 42 51.6 26 50C42 48.4 48.4 42 50 26Z" fill="#FFE9F1" opacity=".5"/><path d="M80 14C81 22 82 23 90 24C82 25 81 26 80 34C79 26 78 25 70 24C78 23 79 22 80 14Z" fill="url(#scg)" opacity=".9"/></svg>';
-  document.body.appendChild(c);
-  var shown=false;
-  function move(e){
-    c.style.transform='translate3d('+e.clientX+'px,'+e.clientY+'px,0) translate(-50%,-50%)';
-    if(!shown){shown=true;c.classList.add('on');}
+  if(matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  var COLORS=['#FF9A8A','#F899B3','#FFC9A3','#FFFFFF'];
+  var last={x:0,y:0,t:0}, live=0, MAX=28;
+  function star(x,y){
+    if(live>=MAX) return;
+    var size=8+Math.random()*9;
+    var s=document.createElement('div');s.className='spk';
+    s.style.left=x+'px'; s.style.top=y+'px';
+    s.style.width=size+'px'; s.style.height=size+'px';
+    s.style.margin=(-size/2).toFixed(1)+'px 0 0 '+(-size/2).toFixed(1)+'px';
+    var ang=Math.random()*6.283, dist=10+Math.random()*22;
+    s.style.setProperty('--dx',(Math.cos(ang)*dist).toFixed(1)+'px');
+    s.style.setProperty('--dy',(Math.sin(ang)*dist-6).toFixed(1)+'px');
+    s.style.setProperty('--life',(620+Math.random()*340).toFixed(0)+'ms');
+    var col=COLORS[(Math.random()*COLORS.length)|0];
+    s.innerHTML='<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><path d="M50 4C54 36 64 46 96 50C64 54 54 64 50 96C46 64 36 54 4 50C36 46 46 36 50 4Z" fill="'+col+'"/></svg>';
+    document.body.appendChild(s); live++;
+    s.addEventListener('animationend',function(){if(s.parentNode)s.parentNode.removeChild(s);live--;});
   }
-  /* pointerrawupdate fires uncoalesced, before paint → snappier than mousemove */
-  if('onpointerrawupdate' in window){addEventListener('pointerrawupdate',move,{passive:true});}
-  addEventListener('pointermove',move,{passive:true});
-  addEventListener('mousedown',function(){c.classList.add('click');});
-  addEventListener('mouseup',function(){c.classList.remove('click');});
-  document.addEventListener('mouseleave',function(){c.classList.remove('on');shown=false;});
-  addEventListener('mouseover',function(e){var t=e.target;if(t.closest&&t.closest('a,button,input,.rec,.pfigure,.bk-track i,.gx-arrow,.gx-dots i,.gx-slide img')){c.classList.add('hot');}},{passive:true});
-  addEventListener('mouseout',function(e){var t=e.target;if(t.closest&&t.closest('a,button,input,.rec,.pfigure,.bk-track i,.gx-arrow,.gx-dots i,.gx-slide img')){c.classList.remove('hot');}},{passive:true});
+  function onMove(e){
+    var x=e.clientX,y=e.clientY,now=performance.now();
+    var dx=x-last.x, dy=y-last.y, d=Math.sqrt(dx*dx+dy*dy);
+    if(d>9 || now-last.t>90){
+      star(x,y);
+      if(d>34) star(last.x+dx*0.5, last.y+dy*0.5); /* fill gaps on fast moves */
+      last.x=x; last.y=y; last.t=now;
+    }
+  }
+  addEventListener('pointermove',onMove,{passive:true});
 })();
 
 /* ===== gallery carousel ===== */
@@ -1141,5 +1154,115 @@ document.querySelectorAll('.gx-slide img').forEach(function(g){g.addEventListene
 function cl(){lb.classList.remove('on');setTimeout(function(){im.src='';},200);}
 lb.addEventListener('click',cl);
 addEventListener('keydown',function(e){if(e.key==='Escape'&&lb.classList.contains('on'))cl();});})();</script>
+
+<!-- ===== floating message widget ===== -->
+<style>
+  .msg-fab{position:fixed;right:22px;bottom:46px;z-index:9500;width:54px;height:54px;border:none;border-radius:50%;
+    background:var(--grad);box-shadow:0 10px 26px -6px rgba(217,87,127,.55),0 2px 6px rgba(0,0,0,.12);
+    display:flex;align-items:center;justify-content:center;cursor:pointer;color:#fff;
+    transition:transform .25s cubic-bezier(.34,1.56,.64,1),box-shadow .25s;animation:fabFloat 3.4s ease-in-out infinite}
+  .msg-fab:hover{transform:translateY(-3px) scale(1.06)}
+  .msg-fab:active{transform:scale(.92)}
+  .msg-fab svg{width:25px;height:25px;display:block}
+  .msg-fab.open{animation:none}
+  .msg-fab .ic-x{display:none}
+  .msg-fab.open .ic-msg{display:none}
+  .msg-fab.open .ic-x{display:block}
+  @keyframes fabFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+  .msg-fab .ping{position:absolute;inset:0;border-radius:50%;background:var(--momo);opacity:.5;
+    animation:fabPing 2.6s ease-out infinite;z-index:-1}
+  .msg-fab.open .ping{display:none}
+  @keyframes fabPing{0%{transform:scale(1);opacity:.45}70%,100%{transform:scale(1.9);opacity:0}}
+
+  .msg-panel{position:fixed;right:22px;bottom:112px;z-index:9499;width:300px;max-width:calc(100vw - 32px);
+    max-height:62vh;background:var(--panel);border:1px solid var(--line);border-radius:18px;
+    box-shadow:0 22px 50px -12px rgba(120,50,75,.32),0 4px 14px rgba(0,0,0,.08);overflow:hidden;
+    display:flex;flex-direction:column;transform-origin:bottom right;
+    opacity:0;transform:translateY(14px) scale(.86);pointer-events:none;
+    transition:opacity .26s ease,transform .3s cubic-bezier(.34,1.4,.64,1)}
+  .msg-panel.open{opacity:1;transform:translateY(0) scale(1);pointer-events:auto}
+  .msg-head{padding:13px 16px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:9px;
+    background:radial-gradient(120% 120% at 0% 0%,#FFF1F4,transparent)}
+  .msg-head .hd-dot{width:8px;height:8px;border-radius:50%;background:var(--grad);flex:none;
+    box-shadow:0 0 9px rgba(248,153,179,.8)}
+  .msg-head .hd-t{font-family:var(--mono);font-size:10px;letter-spacing:.16em;font-weight:700;color:var(--ink)}
+  .msg-head .hd-s{font-family:var(--mono);font-size:8.5px;letter-spacing:.1em;color:var(--muted);margin-left:auto}
+  .msg-body{padding:14px 14px 16px;overflow-y:auto;display:flex;flex-direction:column;gap:11px;
+    scroll-behavior:smooth;flex:1;-webkit-overflow-scrolling:touch}
+  .msg-body::-webkit-scrollbar{width:6px}
+  .msg-body::-webkit-scrollbar-thumb{background:var(--line);border-radius:4px}
+  .msg-row{display:flex;flex-direction:column;max-width:82%;
+    animation:msgPop .42s cubic-bezier(.34,1.7,.5,1) both}
+  .msg-row.me{align-self:flex-end;align-items:flex-end}
+  .msg-row.you{align-self:flex-start;align-items:flex-start}
+  .msg-name{font-family:var(--mono);font-size:8px;letter-spacing:.12em;margin:0 4px 3px;text-transform:uppercase}
+  .msg-row.you .msg-name{color:var(--hugo-ink)}
+  .msg-row.me .msg-name{color:var(--momo-ink)}
+  .msg-bub{padding:9px 13px;border-radius:15px;font-size:13px;line-height:1.5;word-break:break-word;
+    box-shadow:0 3px 9px -4px rgba(120,50,75,.18)}
+  .msg-row.you .msg-bub{background:#FFEDE8;color:#7a3b2e;border-bottom-left-radius:5px}
+  .msg-row.me .msg-bub{background:linear-gradient(120deg,#FFB199,#F87FB0);color:#fff;border-bottom-right-radius:5px}
+  @keyframes msgPop{0%{opacity:0;transform:translateY(9px) scale(.4)}
+    62%{transform:translateY(-3px) scale(1.05)}100%{opacity:1;transform:translateY(0) scale(1)}}
+  .msg-typing{align-self:flex-start;display:flex;gap:4px;padding:10px 13px;background:#FFEDE8;border-radius:15px;
+    border-bottom-left-radius:5px;animation:msgPop .3s ease both}
+  .msg-typing.me{align-self:flex-end;background:#FCE3EC;border-radius:15px;border-bottom-right-radius:5px}
+  .msg-typing i{width:6px;height:6px;border-radius:50%;background:var(--momo);animation:typeb 1s infinite}
+  .msg-typing i:nth-child(2){animation-delay:.15s}.msg-typing i:nth-child(3){animation-delay:.3s}
+  @keyframes typeb{0%,60%,100%{transform:translateY(0);opacity:.4}30%{transform:translateY(-4px);opacity:1}}
+  @media(max-width:560px){.msg-panel{bottom:82px}.msg-fab{right:16px;bottom:16px}.msg-panel{right:16px}}
+</style>
+<button class="msg-fab" id="msgFab" aria-label="메시지 열기">
+  <span class="ping"></span>
+  <svg class="ic-msg" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4 5.5h16a1.5 1.5 0 0 1 1.5 1.5v8a1.5 1.5 0 0 1-1.5 1.5H9.5l-4 3.2V16.5H4A1.5 1.5 0 0 1 2.5 15V7A1.5 1.5 0 0 1 4 5.5Z" fill="#fff"/><circle cx="8" cy="11" r="1.2" fill="#F87FB0"/><circle cx="12" cy="11" r="1.2" fill="#F87FB0"/><circle cx="16" cy="11" r="1.2" fill="#F87FB0"/></svg>
+  <svg class="ic-x" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6 6l12 12M18 6L6 18" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/></svg>
+</button>
+<div class="msg-panel" id="msgPanel" role="dialog" aria-label="유혜성과 도아린의 메시지">
+  <div class="msg-head"><span class="hd-dot"></span><span class="hd-t">MESSAGES</span><span class="hd-s">유혜성 ♥ 도아린</span></div>
+  <div class="msg-body" id="msgBody"></div>
+</div>
+<script>(function(){
+  var fab=document.getElementById('msgFab'),panel=document.getElementById('msgPanel'),body=document.getElementById('msgBody');
+  if(!fab||!panel||!body)return;
+  var chat=[
+    {who:'you',name:'유혜성',text:'자?'},
+    {who:'me', name:'도아린',text:'아니, 아직 안 자. 무슨 일이야?'},
+    {who:'you',name:'유혜성',text:'그냥. 네 생각나서.'},
+    {who:'me', name:'도아린',text:'...나도 혜성이 생각하고 있었는데! 우리 통했다.'},
+    {who:'you',name:'유혜성',text:'우리는 원래 하나야, 토끼야. 잊었어?'},
+    {who:'me', name:'도아린',text:'안 잊었어. 절대 안 잊어.'}
+  ];
+  var open=false,timers=[];
+  function clearTimers(){timers.forEach(clearTimeout);timers=[];}
+  function bottom(){body.scrollTop=body.scrollHeight;}
+  function addRow(m){
+    var row=document.createElement('div');row.className='msg-row '+m.who;
+    var nm=document.createElement('div');nm.className='msg-name';nm.textContent=m.name;
+    var bu=document.createElement('div');bu.className='msg-bub';bu.textContent=m.text;
+    row.appendChild(nm);row.appendChild(bu);body.appendChild(row);bottom();
+  }
+  function showTyping(who){
+    var t=document.createElement('div');t.className='msg-typing'+(who==='me'?' me':'');
+    t.innerHTML='<i></i><i></i><i></i>';body.appendChild(t);bottom();return t;
+  }
+  function play(){
+    clearTimers();body.innerHTML='';
+    var t=0;
+    chat.forEach(function(m,i){
+      var typeDur=440;
+      timers.push(setTimeout(function(){var tp=showTyping(m.who);
+        timers.push(setTimeout(function(){if(tp.parentNode)tp.parentNode.removeChild(tp);addRow(m);},typeDur));
+      },t));
+      t+=typeDur+(i===0?520:640);
+    });
+  }
+  function setOpen(v){
+    open=v;fab.classList.toggle('open',v);panel.classList.toggle('open',v);
+    fab.setAttribute('aria-label',v?'메시지 닫기':'메시지 열기');
+    if(v)play();else clearTimers();
+  }
+  fab.addEventListener('click',function(){setOpen(!open);});
+  document.addEventListener('keydown',function(e){if(e.key==='Escape'&&open)setOpen(false);});
+})();</script>
 </body>
 </html>
